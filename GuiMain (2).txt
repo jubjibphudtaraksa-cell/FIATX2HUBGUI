@@ -1,0 +1,543 @@
+local MacLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/tp777927-byte/Hay-8d/main/Ui_lua"))()  
+  
+-- ═══════════════════════════════  
+--        ปุ่มเปิดปิด GUI  
+-- ═══════════════════════════════  
+local ToggleGui = Instance.new("ScreenGui")  
+ToggleGui.Name = "ToggleButton"  
+ToggleGui.ResetOnSpawn = false  
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling  
+ToggleGui.Parent = game.Players.LocalPlayer.PlayerGui  
+  
+local Button = Instance.new("Frame")  
+Button.Name = "ToggleFrame"  
+Button.Size = UDim2.fromOffset(55, 55)  
+Button.Position = UDim2.new(0, 10, 0.5, -27)  
+Button.BackgroundColor3 = Color3.fromRGB(15, 15, 15)  
+Button.BorderSizePixel = 0  
+Button.Parent = ToggleGui  
+  
+local Stroke = Instance.new("UIStroke")  
+Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border  
+Stroke.Color = Color3.fromRGB(255, 255, 255)  
+Stroke.Transparency = 0.7  
+Stroke.Thickness = 1.5  
+Stroke.Parent = Button  
+  
+local Corner = Instance.new("UICorner")  
+Corner.CornerRadius = UDim.new(0, 8)  
+Corner.Parent = Button  
+  
+local Logo = Instance.new("ImageLabel")  
+Logo.Size = UDim2.fromOffset(32, 32)  
+Logo.Position = UDim2.fromScale(0.5, 0.5)  
+Logo.AnchorPoint = Vector2.new(0.5, 0.5)  
+Logo.BackgroundTransparency = 1  
+Logo.Image = "rbxassetid://18821914323"  
+Logo.ImageColor3 = Color3.fromRGB(255, 255, 255)  
+Logo.ImageTransparency = 0.3  
+Logo.Parent = Button  
+  
+local ClickButton = Instance.new("TextButton")  
+ClickButton.Size = UDim2.fromScale(1, 1)  
+ClickButton.BackgroundTransparency = 1  
+ClickButton.Text = ""  
+ClickButton.Parent = Button  
+  
+-- ═══════════════════════════════  
+--          ลากปุ่มได้  
+-- ═══════════════════════════════  
+local dragging = false  
+local dragStart  
+local startPos  
+local wasDragging = false  
+local dragThreshold = 6  
+  
+ClickButton.InputBegan:Connect(function(input)  
+    if input.UserInputType == Enum.UserInputType.Touch or  
+       input.UserInputType == Enum.UserInputType.MouseButton1 then  
+        dragging = true  
+        wasDragging = false  
+        dragStart = input.Position  
+        startPos = Button.Position  
+    end  
+end)  
+  
+ClickButton.InputEnded:Connect(function(input)  
+    if input.UserInputType == Enum.UserInputType.Touch or  
+       input.UserInputType == Enum.UserInputType.MouseButton1 then  
+        dragging = false  
+    end  
+end)  
+  
+game:GetService("UserInputService").InputChanged:Connect(function(input)  
+    if dragging and (  
+        input.UserInputType == Enum.UserInputType.Touch or  
+        input.UserInputType == Enum.UserInputType.MouseMovement  
+    ) then  
+        local delta = input.Position - dragStart  
+        if delta.Magnitude > dragThreshold then  
+            wasDragging = true  
+        end  
+        Button.Position = UDim2.new(  
+            startPos.X.Scale,  
+            startPos.X.Offset + delta.X,  
+            startPos.Y.Scale,  
+            startPos.Y.Offset + delta.Y  
+        )  
+    end  
+end)  
+  
+-- ═══════════════════════════════  
+--           สร้าง Window  
+-- ═══════════════════════════════  
+local Window = MacLib:Window({  
+    Title = "My Script",  
+    Subtitle = "by Me",  
+    Size = UDim2.fromOffset(868, 650),  
+    DragStyle = 2,  
+    Keybind = Enum.KeyCode.RightControl,  
+    AcrylicBlur = false,  
+    ShowUserInfo = true,  
+})  
+  
+-- ปรับขนาดอัตโนมัติตามหน้าจอ  
+local ScreenSize = workspace.CurrentCamera.ViewportSize  
+local Scale  
+  
+if ScreenSize.X < 500 then  
+    Scale = 0.38  
+elseif ScreenSize.X < 800 then  
+    Scale = 0.48  
+else  
+    Scale = 0.58  
+end  
+  
+Window:SetScale(Scale)  
+  
+-- ═══════════════════════════════  
+--     เปิดปิด + เปลี่ยนโลโก้  
+-- ═══════════════════════════════  
+local TweenService = game:GetService("TweenService")  
+local LOGO_OPEN   = "rbxassetid://10734950309"  
+local LOGO_CLOSED = "rbxassetid://18821914323"  
+local isOpen = true  
+  
+local function SetGuiState(state)  
+    isOpen = state  
+    Window:SetState(state)  
+  
+    Logo.Image = state and LOGO_OPEN or LOGO_CLOSED  
+  
+    TweenService:Create(Stroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {  
+        Color = state  
+            and Color3.fromRGB(100, 200, 255)  
+            or  Color3.fromRGB(255, 255, 255),  
+        Transparency = state and 0.3 or 0.7  
+    }):Play()  
+  
+    TweenService:Create(Logo, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {  
+        ImageTransparency = state and 0 or 0.3  
+    }):Play()  
+  
+    TweenService:Create(Button, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {  
+        BackgroundColor3 = state  
+            and Color3.fromRGB(20, 30, 40)  
+            or  Color3.fromRGB(15, 15, 15)  
+    }):Play()  
+end  
+  
+-- กดปุ่มสลับเปิดปิด (กันลากแล้วเปิดโดยไม่ตั้งใจ)  
+local lastClick = 0  
+ClickButton.MouseButton1Click:Connect(function()  
+    if wasDragging then  
+        wasDragging = false  
+        return  
+    end  
+    local now = tick()  
+    if now - lastClick < 0.2 then return end  
+    lastClick = now  
+    SetGuiState(not isOpen)  
+end)  
+  
+-- Touch สำหรับมือถือ  
+ClickButton.InputEnded:Connect(function(input)  
+    if input.UserInputType == Enum.UserInputType.Touch then  
+        if wasDragging then  
+            wasDragging = false  
+            return  
+        end  
+        local now = tick()  
+        if now - lastClick < 0.2 then return end  
+        lastClick = now  
+        SetGuiState(not isOpen)  
+    end  
+end)  
+  
+-- ═══════════════════════════════  
+--        Global Settings  
+-- ═══════════════════════════════  
+Window:GlobalSetting({  
+    Name = "UI Blur",  
+    Default = false,  
+    Callback = function(bool)  
+        Window:SetAcrylicBlurState(bool)  
+    end,  
+})  
+  
+Window:GlobalSetting({  
+    Name = "Notifications",  
+    Default = true,  
+    Callback = function(bool)  
+        Window:SetNotificationsState(bool)  
+    end,  
+})  
+  
+Window:GlobalSetting({  
+    Name = "Show User Info",  
+    Default = true,  
+    Callback = function(bool)  
+        Window:SetUserInfoState(bool)  
+    end,  
+})  
+  
+-- ═══════════════════════════════  
+--         Tabs & Sections  
+-- ═══════════════════════════════  
+local TabGroup    = Window:TabGroup()  
+local MainTab     = TabGroup:Tab({ Name = "Main",     Image = "rbxassetid://18821914323" })  
+local CombatTab   = TabGroup:Tab({ Name = "Combat",   Image = "rbxassetid://10734950309" })  
+local VisualTab   = TabGroup:Tab({ Name = "Visual",   Image = "rbxassetid://10734950309" })  
+local SettingsTab = TabGroup:Tab({ Name = "Settings", Image = "rbxassetid://10734950309" })  
+  
+-- ═══════════════════════════════  
+--           MAIN TAB  
+-- ═══════════════════════════════  
+local LeftSection  = MainTab:Section({ Side = "Left"  })  
+local RightSection = MainTab:Section({ Side = "Right" })  
+  
+LeftSection:Header({ Name = "Player" })  
+  
+LeftSection:Toggle({  
+    Name = "Infinite Jump",  
+    Default = false,  
+    Callback = function(value)  
+        _G.InfiniteJump = value  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = (value and "Enabled" or "Disabled") .. " Infinite Jump",  
+            Lifetime = 3,  
+        })  
+    end,  
+}, "InfiniteJump")  
+  
+-- Infinite Jump Logic  
+game:GetService("UserInputService").JumpRequest:Connect(function()  
+    if _G.InfiniteJump then  
+        local char = game.Players.LocalPlayer.Character  
+        if char and char:FindFirstChild("Humanoid") then  
+            char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)  
+        end  
+    end  
+end)  
+  
+LeftSection:Slider({  
+    Name = "Walk Speed",  
+    Default = 16,  
+    Minimum = 0,  
+    Maximum = 500,  
+    DisplayMethod = "Value",  
+    Precision = 0,  
+    Callback = function(value)  
+        local char = game.Players.LocalPlayer.Character  
+        if char and char:FindFirstChild("Humanoid") then  
+            char.Humanoid.WalkSpeed = value  
+        end  
+    end,  
+}, "WalkSpeed")  
+  
+LeftSection:Slider({  
+    Name = "Jump Power",  
+    Default = 50,  
+    Minimum = 0,  
+    Maximum = 500,  
+    DisplayMethod = "Value",  
+    Precision = 0,  
+    Callback = function(value)  
+        local char = game.Players.LocalPlayer.Character  
+        if char and char:FindFirstChild("Humanoid") then  
+            char.Humanoid.JumpPower = value  
+        end  
+    end,  
+}, "JumpPower")  
+  
+LeftSection:Input({  
+    Name = "Print Text",  
+    Placeholder = "พิมพ์อะไรก็ได้...",  
+    Default = "",  
+    AcceptedCharacters = "All",  
+    Callback = function(value)  
+        print(value)  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = "Input: " .. value,  
+            Lifetime = 3,  
+        })  
+    end,  
+}, "TextInput")  
+  
+LeftSection:Button({  
+    Name = "Notify Test",  
+    Callback = function()  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = "ทดสอบการแจ้งเตือน!",  
+            Lifetime = 3,  
+        })  
+    end,  
+})  
+  
+LeftSection:Button({  
+    Name = "Dialog Test",  
+    Callback = function()  
+        Window:Dialog({  
+            Title = "ยืนยัน",  
+            Description = "คุณแน่ใจหรือไม่?",  
+            Buttons = {  
+                {  
+                    Name = "Confirm",  
+                    Callback = function()  
+                        Window:Notify({  
+                            Title = "My Script",  
+                            Description = "Confirmed!",  
+                            Lifetime = 3,  
+                        })  
+                    end,  
+                },  
+                { Name = "Cancel" }  
+            }  
+        })  
+    end,  
+})  
+  
+-- Right Section  
+RightSection:Header({ Name = "Info" })  
+  
+RightSection:Label({  
+    Text = "Walk Speed และ Jump Power จะรีเซ็ตเมื่อตาย"  
+})  
+  
+RightSection:SubLabel({  
+    Text = "กด RightControl เพื่อซ่อน/แสดง GUI"  
+})  
+  
+RightSection:Paragraph({  
+    Header = "About",  
+    Body = "My Script v1.0\nสร้างด้วย MacLib",  
+})  
+  
+RightSection:Divider()  
+  
+RightSection:Colorpicker({  
+    Name = "Theme Color",  
+    Default = Color3.fromRGB(100, 200, 255),  
+    Callback = function(color)  
+        Stroke.Color = color  
+    end,  
+}, "ThemeColor")  
+  
+-- ═══════════════════════════════  
+--          COMBAT TAB  
+-- ═══════════════════════════════  
+local CombatLeft  = CombatTab:Section({ Side = "Left"  })  
+local CombatRight = CombatTab:Section({ Side = "Right" })  
+  
+CombatLeft:Header({ Name = "Aimbot" })  
+  
+CombatLeft:Toggle({  
+    Name = "Aimbot",  
+    Default = false,  
+    Callback = function(value)  
+        _G.Aimbot = value  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = (value and "Enabled" or "Disabled") .. " Aimbot",  
+            Lifetime = 3,  
+        })  
+    end,  
+}, "Aimbot")  
+  
+CombatLeft:Slider({  
+    Name = "FOV",  
+    Default = 100,  
+    Minimum = 0,  
+    Maximum = 500,  
+    DisplayMethod = "Value",  
+    Precision = 0,  
+    Callback = function(value)  
+        _G.AimbotFOV = value  
+    end,  
+}, "AimbotFOV")  
+  
+CombatLeft:Dropdown({  
+    Name = "Aim Part",  
+    Options = { "Head", "HumanoidRootPart", "Torso" },  
+    Multi = false,  
+    Required = true,  
+    Default = 1,  
+    Callback = function(value)  
+        _G.AimPart = value  
+    end,  
+}, "AimPart")  
+  
+CombatLeft:Slider({  
+    Name = "Smoothness",  
+    Default = 5,  
+    Minimum = 1,  
+    Maximum = 20,  
+    DisplayMethod = "Value",  
+    Precision = 1,  
+    Callback = function(value)  
+        _G.AimbotSmooth = value  
+    end,  
+}, "AimbotSmooth")  
+  
+CombatRight:Header({ Name = "Silent Aim" })  
+  
+CombatRight:Toggle({  
+    Name = "Silent Aim",  
+    Default = false,  
+    Callback = function(value)  
+        _G.SilentAim = value  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = (value and "Enabled" or "Disabled") .. " Silent Aim",  
+            Lifetime = 3,  
+        })  
+    end,  
+}, "SilentAim")  
+  
+CombatRight:Keybind({  
+    Name = "Aimbot Key",  
+    Default = Enum.KeyCode.Q,  
+    Callback = function(bind)  
+        print("Aimbot Key Pressed: " .. tostring(bind.Name))  
+    end,  
+    onBinded = function(bind)  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = "Aimbot Key: " .. tostring(bind.Name),  
+            Lifetime = 3,  
+        })  
+    end,  
+}, "AimbotKey")  
+  
+-- ═══════════════════════════════  
+--          VISUAL TAB  
+-- ═══════════════════════════════  
+local VisualLeft  = VisualTab:Section({ Side = "Left"  })  
+local VisualRight = VisualTab:Section({ Side = "Right" })  
+  
+VisualLeft:Header({ Name = "ESP" })  
+  
+VisualLeft:Toggle({  
+    Name = "ESP",  
+    Default = false,  
+    Callback = function(value)  
+        _G.ESP = value  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = (value and "Enabled" or "Disabled") .. " ESP",  
+            Lifetime = 3,  
+        })  
+    end,  
+}, "ESP")  
+  
+VisualLeft:Toggle({  
+    Name = "Show Name",  
+    Default = true,  
+    Callback = function(value)  
+        _G.ESPName = value  
+    end,  
+}, "ESPName")  
+  
+VisualLeft:Toggle({  
+    Name = "Show Box",  
+    Default = true,  
+    Callback = function(value)  
+        _G.ESPBox = value  
+    end,  
+}, "ESPBox")  
+  
+VisualLeft:Toggle({  
+    Name = "Show Health",  
+    Default = true,  
+    Callback = function(value)  
+        _G.ESPHealth = value  
+    end,  
+}, "ESPHealth")  
+  
+VisualLeft:Colorpicker({  
+    Name = "ESP Color",  
+    Default = Color3.fromRGB(255, 0, 0),  
+    Callback = function(color)  
+        _G.ESPColor = color  
+    end,  
+}, "ESPColor")  
+  
+VisualLeft:Slider({  
+    Name = "ESP Distance",  
+    Default = 500,  
+    Minimum = 0,  
+    Maximum = 2000,  
+    DisplayMethod = "Value",  
+    Precision = 0,  
+    Callback = function(value)  
+        _G.ESPDistance = value  
+    end,  
+}, "ESPDistance")  
+  
+VisualRight:Header({ Name = "Chams" })  
+  
+VisualRight:Toggle({  
+    Name = "Chams",  
+    Default = false,  
+    Callback = function(value)  
+        _G.Chams = value  
+        Window:Notify({  
+            Title = "My Script",  
+            Description = (value and "Enabled" or "Disabled") .. " Chams",  
+            Lifetime = 3,  
+        })  
+    end,  
+}, "Chams")  
+  
+VisualRight:Colorpicker({  
+    Name = "Chams Color",  
+    Default = Color3.fromRGB(0, 255, 255),  
+    Alpha = 0.5,  
+    Callback = function(color, alpha)  
+        _G.ChamsColor = color  
+        _G.ChamsAlpha = alpha  
+    end,  
+}, "ChamsColor")  
+  
+-- ═══════════════════════════════  
+--         SETTINGS TAB  
+-- ═══════════════════════════════  
+SettingsTab:InsertConfigSection("Left")  
+  
+-- ═══════════════════════════════  
+--             Start  
+-- ═══════════════════════════════  
+MacLib:SetFolder("MyScript")  
+MainTab:Select()  
+SetGuiState(true)  
+  
+Window:Notify({  
+    Title = "My Script",  
+    Description = "โหลดสำเร็จ! แตะปุ่มซ้ายเพื่อเปิด/ปิด GUI",  
+    Lifetime = 5,  
+})  
+  
+MacLib:LoadAutoLoadConfig()
