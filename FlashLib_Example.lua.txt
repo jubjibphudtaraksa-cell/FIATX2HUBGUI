@@ -1,0 +1,367 @@
+--// FlashLib Complete Usage Example
+--// สร้างโดยใช้ FlashLib
+
+local FlashLib = require(game:GetService("ServerScriptService"):WaitForChild("FlashLib"))
+
+-- ═══════════════════════════════
+--        ปุ่มเปิดปิด GUI
+-- ═══════════════════════════════
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "ToggleButton"
+ToggleGui.ResetOnSpawn = false
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ToggleGui.Parent = game.Players.LocalPlayer.PlayerGui
+
+local Button = Instance.new("Frame")
+Button.Name = "ToggleFrame"
+Button.Size = UDim2.fromOffset(55, 55)
+Button.Position = UDim2.new(0, 10, 0.5, -27)
+Button.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Button.BorderSizePixel = 0
+Button.Parent = ToggleGui
+
+local Stroke = Instance.new("UIStroke")
+Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+Stroke.Color = Color3.fromRGB(255, 255, 255)
+Stroke.Transparency = 0.7
+Stroke.Thickness = 1.5
+Stroke.Parent = Button
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = Button
+
+local Logo = Instance.new("ImageLabel")
+Logo.Size = UDim2.fromOffset(32, 32)
+Logo.Position = UDim2.fromScale(0.5, 0.5)
+Logo.AnchorPoint = Vector2.new(0.5, 0.5)
+Logo.BackgroundTransparency = 1
+Logo.Image = "rbxassetid://18821914323"
+Logo.ImageColor3 = Color3.fromRGB(255, 255, 255)
+Logo.ImageTransparency = 0.3
+Logo.Parent = Button
+
+local ClickButton = Instance.new("TextButton")
+ClickButton.Size = UDim2.fromScale(1, 1)
+ClickButton.BackgroundTransparency = 1
+ClickButton.Text = ""
+ClickButton.Parent = Button
+
+-- ═══════════════════════════════
+--          ลากปุ่มได้
+-- ═══════════════════════════════
+local dragging = false
+local dragStart
+local startPos
+local wasDragging = false
+local dragThreshold = 6
+
+ClickButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or
+       input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        wasDragging = false
+        dragStart = input.Position
+        startPos = Button.Position
+    end
+end)
+
+ClickButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or
+       input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and (
+        input.UserInputType == Enum.UserInputType.Touch or
+        input.UserInputType == Enum.UserInputType.MouseMovement
+    ) then
+        local delta = input.Position - dragStart
+        if delta.Magnitude > dragThreshold then
+            wasDragging = true
+        end
+        Button.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- ═══════════════════════════════
+--           สร้าง Window
+-- ═══════════════════════════════
+local Window = FlashLib:Window({
+    Title = "My Script",
+    Subtitle = "by Me",
+    Size = UDim2.fromOffset(868, 650),
+})
+
+local TweenService = game:GetService("TweenService")
+local LOGO_OPEN   = "rbxassetid://10734950309"
+local LOGO_CLOSED = "rbxassetid://18821914323"
+local isOpen = true
+
+local function SetGuiState(state)
+    isOpen = state
+    Window.Settings = Window.Settings or {}
+    
+    Logo.Image = state and LOGO_OPEN or LOGO_CLOSED
+    
+    TweenService:Create(Stroke, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
+        Color = state
+            and Color3.fromRGB(100, 200, 255)
+            or Color3.fromRGB(255, 255, 255),
+        Transparency = state and 0.3 or 0.7
+    }):Play()
+    
+    TweenService:Create(Logo, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
+        ImageTransparency = state and 0 or 0.3
+    }):Play()
+    
+    TweenService:Create(Button, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
+        BackgroundColor3 = state
+            and Color3.fromRGB(20, 30, 40)
+            or Color3.fromRGB(15, 15, 15)
+    }):Play()
+end
+
+-- กดปุ่มสลับเปิดปิด (กันลากแล้วเปิดโดยไม่ตั้งใจ)
+local lastClick = 0
+ClickButton.MouseButton1Click:Connect(function()
+    if wasDragging then
+        wasDragging = false
+        return
+    end
+    local now = tick()
+    if now - lastClick < 0.2 then return end
+    lastClick = now
+    SetGuiState(not isOpen)
+end)
+
+-- Touch สำหรับมือถือ
+ClickButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        if wasDragging then
+            wasDragging = false
+            return
+        end
+        local now = tick()
+        if now - lastClick < 0.2 then return end
+        lastClick = now
+        SetGuiState(not isOpen)
+    end
+end)
+
+-- ═══════════════════════════════
+--         Tabs & Sections
+-- ═══════════════════════════════
+local MainTab     = Window:AddTab("Main")
+local CombatTab   = Window:AddTab("Combat")
+local VisualTab   = Window:AddTab("Visual")
+local SettingsTab = Window:AddTab("Settings")
+
+-- ═══════════════════════════════
+--           MAIN TAB
+-- ═══════════════════════════════
+local LeftSection  = MainTab:AddSection()
+local RightSection = MainTab:AddSection()
+
+LeftSection:AddLabel("Player")
+
+local infiniteJumpToggle = LeftSection:AddToggle("Infinite Jump", function(value)
+    _G.InfiniteJump = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " Infinite Jump", 3)
+end)
+
+-- Infinite Jump Logic
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if _G.InfiniteJump then
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+local walkSpeedSlider = LeftSection:AddSlider("Walk Speed", 0, 500, 16, function(value)
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = value
+    end
+end)
+
+local jumpPowerSlider = LeftSection:AddSlider("Jump Power", 0, 500, 50, function(value)
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.JumpPower = value
+    end
+end)
+
+local textInput = LeftSection:AddInput("Print Text", "พิมพ์อะไรก็ได้...", function(value)
+    print(value)
+    Window:Notify("Input: " .. value, 3)
+end)
+
+LeftSection:AddButton("Notify Test", function()
+    Window:Notify("ทดสอบการแจ้งเตือน!", 3)
+end)
+
+LeftSection:AddButton("Reset Speed", function()
+    walkSpeedSlider:SetValue(16)
+    jumpPowerSlider:SetValue(50)
+    Window:Notify("Reset completed!", 3)
+end)
+
+-- Right Section
+RightSection:AddLabel("Information")
+RightSection:AddLabel("Walk Speed และ Jump Power จะรีเซ็ต")
+RightSection:AddLabel("เมื่อตาย")
+
+RightSection:AddButton("Copy Username", function()
+    local player = game.Players.LocalPlayer
+    print(player.Name)
+    Window:Notify("Username: " .. player.Name, 3)
+end)
+
+RightSection:AddButton("Get Player Info", function()
+    local player = game.Players.LocalPlayer
+    Window:Notify("Level: " .. (player:FindFirstChild("Level") and player.Level.Value or "N/A"), 3)
+end)
+
+-- ═══════════════════════════════
+--          COMBAT TAB
+-- ═══════════════════════════════
+local CombatLeft  = CombatTab:AddSection()
+local CombatRight = CombatTab:AddSection()
+
+CombatLeft:AddLabel("Aimbot")
+
+local aimbotToggle = CombatLeft:AddToggle("Aimbot", function(value)
+    _G.Aimbot = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " Aimbot", 3)
+end)
+
+local fovSlider = CombatLeft:AddSlider("FOV", 0, 500, 100, function(value)
+    _G.AimbotFOV = value
+end)
+
+local aimPartDropdown = CombatLeft:AddDropdown("Aim Part", {"Head", "HumanoidRootPart", "Torso"}, function(value)
+    _G.AimPart = value
+    Window:Notify("Aim Part: " .. value, 2)
+end)
+
+local smoothnessSlider = CombatLeft:AddSlider("Smoothness", 1, 20, 5, function(value)
+    _G.AimbotSmooth = value
+end)
+
+CombatRight:AddLabel("Silent Aim")
+
+local silentAimToggle = CombatRight:AddToggle("Silent Aim", function(value)
+    _G.SilentAim = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " Silent Aim", 3)
+end)
+
+CombatRight:AddButton("Test Aimbot", function()
+    Window:Notify("Aimbot Settings Updated", 2)
+end)
+
+CombatRight:AddButton("Reset Aimbot", function()
+    aimbotToggle:SetValue(false)
+    fovSlider:SetValue(100)
+    smoothnessSlider:SetValue(5)
+    Window:Notify("Aimbot Reset", 2)
+end)
+
+-- ═══════════════════════════════
+--          VISUAL TAB
+-- ═══════════════════════════════
+local VisualLeft  = VisualTab:AddSection()
+local VisualRight = VisualTab:AddSection()
+
+VisualLeft:AddLabel("ESP")
+
+local espToggle = VisualLeft:AddToggle("ESP", function(value)
+    _G.ESP = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " ESP", 3)
+end)
+
+local espNameToggle = VisualLeft:AddToggle("Show Name", function(value)
+    _G.ESPName = value
+end)
+
+local espBoxToggle = VisualLeft:AddToggle("Show Box", function(value)
+    _G.ESPBox = value
+end)
+
+local espHealthToggle = VisualLeft:AddToggle("Show Health", function(value)
+    _G.ESPHealth = value
+end)
+
+local espDistanceSlider = VisualLeft:AddSlider("ESP Distance", 0, 2000, 500, function(value)
+    _G.ESPDistance = value
+end)
+
+VisualRight:AddLabel("Visual Effects")
+
+local chamsToggle = VisualRight:AddToggle("Chams", function(value)
+    _G.Chams = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " Chams", 3)
+end)
+
+local wallhackToggle = VisualRight:AddToggle("Wallhack", function(value)
+    _G.Wallhack = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " Wallhack", 3)
+end)
+
+VisualRight:AddButton("Clear Visuals", function()
+    espToggle:SetValue(false)
+    chamsToggle:SetValue(false)
+    wallhackToggle:SetValue(false)
+    Window:Notify("Visuals Cleared", 2)
+end)
+
+-- ═══════════════════════════════
+--         SETTINGS TAB
+-- ═══════════════════════════════
+local SettingsSection = SettingsTab:AddSection()
+
+SettingsSection:AddLabel("Script Settings")
+
+local darkModeToggle = SettingsSection:AddToggle("Dark Mode", function(value)
+    _G.DarkMode = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " Dark Mode", 2)
+end)
+
+local notificationsToggle = SettingsSection:AddToggle("Notifications", function(value)
+    _G.Notifications = value
+    Window:Notify((value and "✓ Enabled" or "✗ Disabled") .. " Notifications", 2)
+end)
+
+SettingsSection:AddButton("Save Settings", function()
+    Window:Notify("Settings Saved!", 2)
+end)
+
+SettingsSection:AddButton("Load Settings", function()
+    Window:Notify("Settings Loaded!", 2)
+end)
+
+SettingsSection:AddButton("Reset All", function()
+    infiniteJumpToggle:SetValue(false)
+    espToggle:SetValue(false)
+    aimbotToggle:SetValue(false)
+    chamsToggle:SetValue(false)
+    Window:Notify("All settings reset!", 3)
+end)
+
+-- ═══════════════════════════════
+--         Initialize
+-- ═══════════════════════════════
+SetGuiState(true)
+
+Window:Notify("สคริปต์โหลดสำเร็จ! แตะปุ่มซ้ายเพื่อเปิด/ปิด GUI", 5)
+
+print("FlashLib Script Loaded Successfully!")
